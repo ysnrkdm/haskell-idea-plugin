@@ -1,27 +1,18 @@
 package org.jetbrains.haskell.external
 
-import com.intellij.extapi.psi.ASTWrapperPsiElement
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import org.jetbrains.annotations.Nullable
-import com.intellij.openapi.module.ModuleUtil
-import com.intellij.openapi.module.ModuleUtilCore
 import org.json.simple.JSONArray
 import java.io.File
 import org.jetbrains.haskell.util.copyFile
-import org.json.simple.JSONObject
 import org.jetbrains.haskell.util.LineColPosition
 import com.intellij.openapi.vfs.LocalFileSystem
 import java.util.HashSet
-import sun.nio.cs.StandardCharsets
 import java.io.ByteArrayInputStream
 import org.jetbrains.haskell.util.getRelativePath
 import com.intellij.openapi.application.ModalityState
@@ -86,7 +77,6 @@ public class HaskellExternalAnnotator() : ExternalAnnotator<PsiFile, List<ErrorM
             }
         }, ModalityState.any())
 
-
         val ghcModi = psiFile.getProject().getComponent(javaClass<GhcModi>())!!
 
         val relativePath = getRelativePath(baseDir.getPath(), file.getPath())
@@ -108,6 +98,40 @@ public class HaskellExternalAnnotator() : ExternalAnnotator<PsiFile, List<ErrorM
                     ErrorMessage.Severity.Error
                 }
                 if (relativePath == path) {
+                    errors.add(ErrorMessage(msg, path, severity, line, col, line, col))
+                }
+            }
+        }
+
+        return errors
+    }
+
+    fun getResultFromScan(psiFile: PsiFile,
+                          baseDir: VirtualFile,
+                          file: VirtualFile): List<ErrorMessage> {
+        ApplicationManager.getApplication()!!.invokeAndWait(object : Runnable {
+            override fun run() {
+                FileDocumentManager.getInstance()!!.saveAllDocuments()
+            }
+        }, ModalityState.any())
+
+        val scan = psiFile.getProject().getComponent(javaClass<Scan>())!!
+
+        val absolutePath = file.getCanonicalPath()!!
+
+        val result = scan.runCommand(absolutePath)
+
+        val errors = ArrayList<ErrorMessage>()
+
+        for (resultLine in result) {
+            val matcher = Pattern.compile("(.*):(\\d*):(\\d*):(.*)").matcher(resultLine)
+            if (matcher.find()) {
+                val path = matcher.group(1)!!
+                val line = Integer.parseInt(matcher.group(2)!!)
+                val col = Integer.parseInt(matcher.group(3)!!)
+                val msg = matcher.group(4)!!.replace("\u0000", "\n")
+                val severity = ErrorMessage.Severity.Warning
+                if (absolutePath == path) {
                     errors.add(ErrorMessage(msg, path, severity, line, col, line, col))
                 }
             }
@@ -154,7 +178,12 @@ public class HaskellExternalAnnotator() : ExternalAnnotator<PsiFile, List<ErrorM
             return listOf()
         }
 
-        return getResultFromGhcModi(psiFile, baseDir, file)
+        val resultGhcModi = getResultFromGhcModi(psiFile, baseDir, file)
+        val resultScan = getResultFromScan(psiFile, baseDir, file)
+
+        val result = resultGhcModi + resultScan
+
+        return result
     }
 
 

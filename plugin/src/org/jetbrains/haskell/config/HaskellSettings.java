@@ -35,6 +35,8 @@ public class HaskellSettings implements PersistentStateComponent<HaskellSettings
         public String scionBrowserPath;
         public String cabalPath;
         public String cabalDataPath;
+        public String scanPath;
+        public String hLintPath;
     }
 
     State myState = new State();
@@ -67,6 +69,16 @@ public class HaskellSettings implements PersistentStateComponent<HaskellSettings
         if (myState.scionBrowserPath == null) {
             OsUtil os = UtilPackage.getOS();
             myState.scionBrowserPath = os.getDefaultCabalBin() + File.separator + "scion-browser" + os.getExe();
+        }
+
+        if (myState.scanPath == null) {
+            OsUtil os = UtilPackage.getOS();
+            myState.scanPath = os.getDefaultCabalBin() + File.separator + "scan" + os.getExe();
+        }
+
+        if (myState.hLintPath == null) {
+            OsUtil os = UtilPackage.getOS();
+            myState.hLintPath = os.getDefaultCabalBin() + File.separator + "hlint" + os.getExe();
         }
     }
 

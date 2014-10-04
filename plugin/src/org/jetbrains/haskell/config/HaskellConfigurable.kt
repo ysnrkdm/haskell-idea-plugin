@@ -12,7 +12,6 @@ import org.jetbrains.haskell.util.gridBagConstraints
 import java.awt.Insets
 import java.awt.GridBagLayout
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
-import com.intellij.openapi.fileTypes.FileType
 
 public class HaskellConfigurable() : Configurable {
     private var isModified = false
@@ -21,7 +20,8 @@ public class HaskellConfigurable() : Configurable {
     private val ghcMod = TextFieldWithBrowseButton()
     private val ghcModi = TextFieldWithBrowseButton()
     private val buildWrapper = TextFieldWithBrowseButton()
-
+    private val scan = TextFieldWithBrowseButton()
+    private val hLint = TextFieldWithBrowseButton()
 
 
     override fun getDisplayName(): String {
@@ -56,10 +56,22 @@ public class HaskellConfigurable() : Configurable {
                 null,
                 FileChooserDescriptorFactory.createSingleLocalFileDescriptor())
 
+        scan.addBrowseFolderListener(
+                "Select scan execurtable",
+                null,
+                null,
+                FileChooserDescriptorFactory.createSingleLocalFileDescriptor())
+
+        hLint.addBrowseFolderListener(
+                "Select hLint execurtable",
+                null,
+                null,
+                FileChooserDescriptorFactory.createSingleLocalFileDescriptor())
+
 
         val result = JPanel(GridBagLayout())
 
-        val listener : DocumentAdapter = object : DocumentAdapter() {
+        val listener: DocumentAdapter = object : DocumentAdapter() {
 
             override fun textChanged(e: DocumentEvent?) {
                 isModified = true;
@@ -71,13 +83,15 @@ public class HaskellConfigurable() : Configurable {
         cabalDataPathField.getTextField()!!.getDocument()!!.addDocumentListener(listener)
         ghcMod.getTextField()!!.getDocument()!!.addDocumentListener(listener)
         buildWrapper.getTextField()!!.getDocument()!!.addDocumentListener(listener)
+        scan.getTextField()!!.getDocument()!!.addDocumentListener(listener)
+        hLint.getTextField()!!.getDocument()!!.addDocumentListener(listener)
 
         val base = gridBagConstraints {
             insets = Insets(2, 0, 2, 3)
         }
 
 
-        fun addLabeledControl(row : Int, label : String, component : JComponent) {
+        fun addLabeledControl(row: Int, label: String, component: JComponent) {
             result.add(JLabel(label), base.setConstraints {
                 anchor = GridBagConstraints.LINE_START
                 gridx = 0;
@@ -99,10 +113,12 @@ public class HaskellConfigurable() : Configurable {
         }
 
         addLabeledControl(0, "cabal executable", cabalPathField)
-        addLabeledControl(1, "cabal data path", cabalDataPathField);
+        addLabeledControl(1, "cabal data path", cabalDataPathField)
         addLabeledControl(2, "ghc-mod executable", ghcMod)
         addLabeledControl(3, "ghc-modi executable", ghcModi)
         addLabeledControl(4, "buildwrapper executable", buildWrapper)
+        addLabeledControl(5, "scan executable", scan)
+        addLabeledControl(6, "HLint executable", hLint)
 
 
         result.add(JPanel(), gridBagConstraints {
@@ -125,8 +141,9 @@ public class HaskellConfigurable() : Configurable {
         state.cabalDataPath = cabalDataPathField.getTextField()!!.getText()
         state.ghcModPath = ghcMod.getTextField()!!.getText()
         state.ghcModiPath = ghcModi.getTextField()!!.getText()
-
         state.buildWrapperPath = buildWrapper.getTextField()!!.getText()
+        state.scanPath = scan.getTextField()!!.getText()
+        state.hLintPath = hLint.getTextField()!!.getText()
 
         isModified = false
     }
@@ -142,8 +159,9 @@ public class HaskellConfigurable() : Configurable {
         cabalDataPathField.getTextField()!!.setText(state.cabalDataPath ?: "")
         ghcMod.getTextField()!!.setText(state.ghcModPath ?: "")
         ghcModi.getTextField()!!.setText(state.ghcModiPath ?: "")
-
         buildWrapper.getTextField()!!.setText(state.buildWrapperPath ?: "")
+        scan.getTextField()!!.setText(state.scanPath ?: "")
+        hLint.getTextField()!!.setText(state.hLintPath ?: "")
 
         isModified = false
     }
